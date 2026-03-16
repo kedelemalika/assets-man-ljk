@@ -1,0 +1,9 @@
+.env
+vendor/
+node_modules/
+storage/*.key
+storage/logs/*.log
+public/uploads/
+bootstrap/cache/*.php
+supervisord.log
+supervisord.pid
