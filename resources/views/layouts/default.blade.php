@@ -1250,8 +1250,16 @@
         <span>BAST</span>
     </a>
 </li>
-                        @can('index', \App\Models\Asset::class)
-                            <li class="treeview{{ ((request()->is('statuslabels/*') || request()->is('hardware*')) ? ' active' : '') }}">
+
+<li id="item-requests-sidenav-option"{!! (request()->is('item-requests*') ? ' class="active"' : '') !!}>
+    <a href="{{ route('item-requests.index') }}">
+        <i class="fa-solid fa-file-lines fa-fw"></i>
+        <span>Pengajuan Barang</span>
+    </a>
+</li>
+
+@can('index', \App\Models\Asset::class)
+    <li class="treeview{{ ((request()->is('statuslabels/*') || request()->is('hardware*')) ? ' active' : '') }}">
                                 <a href="#">
                                     <x-icon type="assets" class="fa-fw" />
                                     <span>{{ trans('general.assets') }}</span>

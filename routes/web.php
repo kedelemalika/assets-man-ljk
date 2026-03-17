@@ -17,6 +17,7 @@ use App\Http\Controllers\DepartmentsController;
 use App\Http\Controllers\DepreciationsController;
 use App\Http\Controllers\GroupsController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ItemRequestController;
 use App\Http\Controllers\LabelsController;
 use App\Http\Controllers\UploadedFilesController;
 use App\Http\Controllers\ManufacturersController;
@@ -798,6 +799,12 @@ Route::group(['prefix' => 'basts', 'middleware' => ['auth']], function () {
             $trail->parent('basts.index')
                 ->push('Buat BAST', route('basts.create')));
 
+    Route::get('/from-request/{item_request}', [BastController::class, 'createFromRequest'])
+        ->name('basts.create.from-request')
+        ->breadcrumbs(fn (Trail $trail, $item_request) =>
+            $trail->parent('basts.index')
+                ->push('Buat BAST dari Pengajuan', route('basts.create.from-request', $item_request)));
+
     Route::post('/', [BastController::class, 'store'])
         ->name('basts.store');
 
@@ -821,4 +828,21 @@ Route::group(['prefix' => 'basts', 'middleware' => ['auth']], function () {
 
     Route::get('/{bast}/print', [BastController::class, 'print'])
         ->name('basts.print');
+});
+
+
+Route::group(['prefix' => 'item-requests', 'middleware' => ['auth']], function () {
+    Route::get('/', [ItemRequestController::class, 'index'])->name('item-requests.index');
+    Route::get('/create', [ItemRequestController::class, 'create'])->name('item-requests.create');
+    Route::post('/', [ItemRequestController::class, 'store'])->name('item-requests.store');
+    Route::get('/{item_request}', [ItemRequestController::class, 'show'])->name('item-requests.show');
+
+    Route::post('/{item_request}/approve', [ItemRequestController::class, 'approve'])
+        ->name('item-requests.approve');
+
+    Route::post('/{item_request}/reject', [ItemRequestController::class, 'reject'])
+        ->name('item-requests.reject');
+
+    Route::post('/{item_request}/ready-for-handover', [ItemRequestController::class, 'markReadyForHandover'])
+        ->name('item-requests.ready-for-handover');
 });

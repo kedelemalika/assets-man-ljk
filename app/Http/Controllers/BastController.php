@@ -7,6 +7,7 @@ use App\Models\Bast;
 use App\Models\BastItem;
 use App\Models\Company;
 use App\Models\Department;
+use App\Models\ItemRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,9 +38,46 @@ class BastController extends Controller
         return view('basts.create', compact('assets', 'users', 'departments'));
     }
 
+    public function createFromRequest(ItemRequest $item_request)
+    {
+        $item_request->load(['items.asset', 'requester', 'department']);
+
+        if ($item_request->request_type !== 'asset') {
+            return redirect()->back()->with('error', 'Hanya request asset yang bisa dibuatkan BAST.');
+        }
+
+        if ($item_request->status !== 'ready_for_handover') {
+            return redirect()->back()->with('error', 'Request harus berstatus ready_for_handover.');
+        }
+
+        $assetIds = $item_request->items
+            ->pluck('asset_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($assetIds->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ada asset yang terhubung pada request ini.');
+        }
+
+        $assets = Asset::with(['model', 'company'])
+            ->whereIn('id', $assetIds)
+            ->whereNull('deleted_at')
+            ->where('archived', 0)
+            ->orderBy('asset_tag')
+            ->get();
+
+        $users = User::with('department')->orderBy('display_name')->get();
+        $departments = Department::orderBy('name')->get();
+
+        return view('basts.create', compact('assets', 'users', 'departments', 'item_request'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
+            'item_request_id' => 'nullable|exists:item_requests,id',
+
             'bast_date' => 'required|date',
             'department_id' => 'required|exists:departments,id',
 
@@ -108,6 +146,17 @@ class BastController extends Controller
                     'condition_notes' => $request->condition_notes[$index] ?? null,
                     'remarks' => $request->remarks[$index] ?? null,
                 ]);
+            }
+
+            if ($request->filled('item_request_id')) {
+                $itemRequest = ItemRequest::find($request->item_request_id);
+
+                if ($itemRequest) {
+                    $itemRequest->update([
+                        'bast_id' => $bast->id,
+                        'status' => 'handed_over',
+                    ]);
+                }
             }
 
             return $bast;
