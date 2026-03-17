@@ -11,13 +11,17 @@ class ItemRequestItem extends Model
 
     protected $fillable = [
         'item_request_id',
+        'item_type',
+        'fulfillment_type',
+        'asset_id',
+        'consumable_id',
         'item_name',
         'spec',
         'qty',
         'estimated_price',
-        'item_type',
-        'asset_id',
-        'consumable_id',
+        'remarks',
+        'is_registered',
+        'is_fulfilled'
     ];
 
     public function itemRequest()

@@ -1,8 +1,8 @@
 @extends('layouts/default')
 
 @section('title')
-    Detail Pengajuan Barang
-    @parent
+Detail Pengajuan Barang
+@parent
 @stop
 
 @section('content')
@@ -10,11 +10,11 @@
     <div class="col-md-12">
 
         @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
         @if(session('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
         <div class="box box-default">
@@ -46,7 +46,19 @@
                     </tr>
                     <tr>
                         <th>Status</th>
-                        <td>{{ $itemRequest->status }}</td>
+                        <td>
+                            <span class="label label-info">{{ $itemRequest->status }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Progress Approval</th>
+                        <td>
+                            @php
+                            $approvedCount = $itemRequest->approvals->where('status', 'approved')->count();
+                            $totalApproval = $itemRequest->approvals->count();
+                            @endphp
+                            {{ $approvedCount }} / {{ $totalApproval }} step approved
+                        </td>
                     </tr>
                     <tr>
                         <th>Keperluan</th>
@@ -78,63 +90,203 @@
                             <th>Qty</th>
                             <th>Estimasi Harga</th>
                             <th>Tipe</th>
+                            <th>Sumber Pemenuhan</th>
                             <th>Referensi</th>
+                            <th>Registered</th>
+                            <th>Fulfilled</th>
+                            <th width="280">Aksi Link</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($itemRequest->items as $item)
-                            <tr>
-                                <td>{{ $item->item_name }}</td>
-                                <td>{{ $item->spec }}</td>
-                                <td>{{ $item->qty }}</td>
-                                <td>{{ number_format($item->estimated_price ?? 0, 2, ',', '.') }}</td>
-                                <td>{{ ucfirst($item->item_type) }}</td>
-                                <td>
-                                    @if($item->asset)
-                                        Asset: {{ $item->asset->asset_tag }}
-                                    @elseif($item->consumable)
-                                        Consumable: {{ $item->consumable->name }}
-                                    @else
-                                        -
+                        <tr>
+                            <td>{{ $item->item_name }}</td>
+                            <td>{{ $item->spec }}</td>
+                            <td>{{ $item->qty }}</td>
+                            <td>{{ number_format($item->estimated_price ?? 0, 2, ',', '.') }}</td>
+                            <td>{{ ucfirst($item->item_type) }}</td>
+                            <td>
+                                @if($item->fulfillment_type === 'existing_stock')
+                                <span class="label label-success">Stok</span>
+                                @else
+                                <span class="label label-warning">Procurement</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($item->asset)
+                                Asset: {{ $item->asset->asset_tag }}
+                                @elseif($item->consumable)
+                                Consumable: {{ $item->consumable->name }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>
+                                @if($item->is_registered)
+                                <span class="label label-success">Ya</span>
+                                @else
+                                <span class="label label-default">Belum</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($item->is_fulfilled)
+                                <span class="label label-success">Ya</span>
+                                @else
+                                <span class="label label-default">Belum</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($itemRequest->status === 'delivered' && $item->fulfillment_type === 'procurement' && !$item->is_registered)
+                                <form action="{{ route('item-requests.items.link', [$itemRequest->id, $item->id]) }}" method="POST" class="form-inline">
+                                    @csrf
+
+                                    @if($item->item_type === 'asset')
+                                    <div class="form-group" style="width:100%; margin-bottom:5px;">
+                                        <select name="asset_id" class="form-control" style="width:100%;">
+                                            <option value="">-- Pilih Asset Terdaftar --</option>
+                                            @foreach($assets as $asset)
+                                            <option value="{{ $asset->id }}">
+                                                {{ $asset->asset_tag }} - {{ $asset->name ?? optional($asset->model)->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     @endif
-                                </td>
-                            </tr>
+
+                                    @if($item->item_type === 'consumable')
+                                    <div class="form-group" style="width:100%; margin-bottom:5px;">
+                                        <select name="consumable_id" class="form-control" style="width:100%;">
+                                            <option value="">-- Pilih Consumable Terdaftar --</option>
+                                            @foreach($consumables as $consumable)
+                                            <option value="{{ $consumable->id }}">
+                                                {{ $consumable->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    @endif
+
+                                    <button type="submit" class="btn btn-xs btn-primary">
+                                        Link Item
+                                    </button>
+                                </form>
+                                @elseif($item->fulfillment_type === 'procurement' && $item->is_registered)
+                                <span class="label label-success">Sudah terhubung</span>
+                                @else
+                                -
+                                @endif
+                            </td>
+                        </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
 
-            <div class="box-footer">
-                @if(in_array($itemRequest->status, ['draft', 'submitted']))
-                    <form action="{{ route('item-requests.approve', $itemRequest->id) }}" method="POST" style="display:inline-block;">
-                        @csrf
-                        <button type="submit" class="btn btn-success">Approve</button>
-                    </form>
+            <div class="box box-default">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Riwayat Approval</h3>
+                </div>
 
-                    <form action="{{ route('item-requests.reject', $itemRequest->id) }}" method="POST" style="display:inline-block;">
-                        @csrf
-                        <input type="hidden" name="rejection_reason" value="Ditolak dari halaman detail">
-                        <button type="submit" class="btn btn-danger">Reject</button>
-                    </form>
+                <div class="box-body table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th width="80">Step</th>
+                                <th>Assigned To</th>
+                                <th>Assigned Role</th>
+                                <th>Approver</th>
+                                <th>Status</th>
+                                <th>Catatan</th>
+                                <th width="180">Acted At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($itemRequest->approvals as $approval)
+                            <tr>
+                                <td>
+                                    {{ $approval->approval_order }}
+                                    @if($approval->status === 'waiting')
+                                    <span class="label label-primary">current</span>
+                                    @endif
+                                </td>
+                                <td>{{ optional($approval->assignedApprover)->display_name ?? '-' }}</td>
+                                <td>{{ $approval->assigned_role ?? '-' }}</td>
+                                <td>{{ $approval->approver_name ?? '-' }}</td>
+                                <td>
+                                    @if($approval->status === 'approved')
+                                    <span class="label label-success">approved</span>
+                                    @elseif($approval->status === 'rejected')
+                                    <span class="label label-danger">rejected</span>
+                                    @elseif($approval->status === 'revision_needed')
+                                    <span class="label label-warning">revision_needed</span>
+                                    @else
+                                    <span class="label label-default">waiting</span>
+                                    @endif
+                                </td>
+                                <td>{{ $approval->remarks ?? '-' }}</td>
+                                <td>{{ optional($approval->acted_at)->format('Y-m-d H:i:s') ?? '-' }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="text-center">Belum ada riwayat approval.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="box-footer">
+                @if(in_array($itemRequest->status, ['draft', 'submitted']) && $itemRequest->approvals->where('status', 'waiting')->count() > 0)
+                <form action="{{ route('item-requests.approve', $itemRequest->id) }}" method="POST" style="display:inline-block;">
+                    @csrf
+                    <button type="submit" class="btn btn-success">Approve</button>
+                </form>
+
+                <form action="{{ route('item-requests.reject', $itemRequest->id) }}" method="POST" style="display:inline-block;">
+                    @csrf
+                    <input type="hidden" name="rejection_reason" value="Ditolak dari halaman detail">
+                    <button type="submit" class="btn btn-danger">Reject</button>
+                </form>
                 @endif
 
-                @if($itemRequest->status === 'approved')
-                    <form action="{{ route('item-requests.ready-for-handover', $itemRequest->id) }}" method="POST" style="display:inline-block;">
-                        @csrf
-                        <button type="submit" class="btn btn-primary">Siap Serah Terima</button>
-                    </form>
+                @if($itemRequest->status === 'procurement_process')
+                <form action="{{ route('item-requests.mark-delivered', $itemRequest->id) }}" method="POST" style="display:inline-block;">
+                    @csrf
+                    <button type="submit" class="btn btn-primary">Mark as Delivered</button>
+                </form>
+                @endif
+
+                @if(in_array($itemRequest->status, ['approved', 'delivered']))
+                <form action="{{ route('item-requests.ready-for-handover', $itemRequest->id) }}" method="POST" style="display:inline-block;">
+                    @csrf
+                    <button type="submit" class="btn btn-primary">Siap Serah Terima</button>
+                </form>
                 @endif
 
                 @if($itemRequest->status === 'ready_for_handover' && $itemRequest->request_type === 'asset')
-                    <a href="{{ route('basts.create.from-request', $itemRequest->id) }}" class="btn btn-warning">
-                        Generate BAST
-                    </a>
+                <a href="{{ route('basts.create.from-request', $itemRequest->id) }}" class="btn btn-warning">
+                    Generate BAST
+                </a>
+                @endif
+
+                @if($itemRequest->status === 'ready_for_handover' && $itemRequest->request_type === 'consumable')
+                <a href="{{ route('consumable-handovers.create.from-request', $itemRequest->id) }}" class="btn btn-warning">
+                    Generate Serah Terima Consumable
+                </a>
+                @endif
+
+                @if($itemRequest->status === 'handed_over')
+                <form action="{{ route('item-requests.close', $itemRequest->id) }}" method="POST" style="display:inline-block;">
+                    @csrf
+                    <button type="submit" class="btn btn-success">Close Request</button>
+                </form>
                 @endif
 
                 @if($itemRequest->bast_id)
-                    <a href="{{ route('basts.show', $itemRequest->bast_id) }}" class="btn btn-info">
-                        Lihat BAST
-                    </a>
+                <a href="{{ route('basts.show', $itemRequest->bast_id) }}" class="btn btn-info">
+                    Lihat BAST
+                </a>
                 @endif
 
                 <a href="{{ route('item-requests.index') }}" class="btn btn-default">

@@ -49,6 +49,9 @@
                                     <option value="cash" {{ old('procurement_type') == 'cash' ? 'selected' : '' }}>Kas Kecil</option>
                                     <option value="po" {{ old('procurement_type') == 'po' ? 'selected' : '' }}>PO</option>
                                 </select>
+                                <p class="help-block" style="margin-bottom:0;">
+                                    Dipakai terutama jika ada item dengan sumber pemenuhan <strong>Pengadaan Baru</strong>.
+                                </p>
                             </div>
                         </div>
 
@@ -74,6 +77,13 @@
                 </div>
             </div>
 
+            <div class="alert alert-info" style="margin-bottom:15px;">
+                <strong>Panduan:</strong><br>
+                - Pilih <strong>Ambil dari Stok Existing</strong> jika barang sudah tersedia di Assets.<br>
+                - Pilih <strong>Pengadaan Baru</strong> jika barang belum tersedia dan harus dibeli terlebih dahulu.<br>
+                - Untuk <strong>Pengadaan Baru</strong>, field Asset Existing / Consumable Existing tidak perlu dipilih.
+            </div>
+
             <div class="box box-default">
                 <div class="box-header with-border">
                     <h3 class="box-title">Item Pengajuan</h3>
@@ -86,8 +96,9 @@
                                 <th>Nama Item</th>
                                 <th>Spesifikasi</th>
                                 <th>Qty</th>
-                                <th>Estimasi Harga</th>
-                                <th>Tipe</th>
+                                <th>Estimasi Harga / Unit</th>
+                                <th>Tipe Item</th>
+                                <th>Sumber Barang</th>
                                 <th>Asset Existing</th>
                                 <th>Consumable Existing</th>
                                 <th width="80">Aksi</th>
@@ -108,13 +119,19 @@
                                     <input type="number" step="0.01" name="items[0][estimated_price]" class="form-control">
                                 </td>
                                 <td>
-                                    <select name="items[0][item_type]" class="form-control" required>
+                                    <select name="items[0][item_type]" class="form-control item-type-select" required>
                                         <option value="asset">Asset</option>
                                         <option value="consumable">Consumable</option>
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="items[0][asset_id]" class="form-control">
+                                    <select name="items[0][fulfillment_type]" class="form-control fulfillment-type-select" required>
+                                        <option value="existing_stock">Ambil dari Stok Existing</option>
+                                        <option value="procurement">Pengadaan Baru</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="items[0][asset_id]" class="form-control asset-select">
                                         <option value="">-- Pilih Asset --</option>
                                         @foreach($assets as $asset)
                                             <option value="{{ $asset->id }}">
@@ -124,7 +141,7 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="items[0][consumable_id]" class="form-control">
+                                    <select name="items[0][consumable_id]" class="form-control consumable-select">
                                         <option value="">-- Pilih Consumable --</option>
                                         @foreach($consumables as $consumable)
                                             <option value="{{ $consumable->id }}">
@@ -157,6 +174,54 @@
 <script>
     let rowIndex = 1;
 
+    function toggleRowFields(row) {
+        const itemType = row.querySelector('.item-type-select').value;
+        const fulfillmentType = row.querySelector('.fulfillment-type-select').value;
+
+        const assetSelect = row.querySelector('.asset-select');
+        const consumableSelect = row.querySelector('.consumable-select');
+
+        // reset state
+        assetSelect.disabled = false;
+        consumableSelect.disabled = false;
+
+        if (fulfillmentType === 'existing_stock') {
+            if (itemType === 'asset') {
+                assetSelect.disabled = false;
+                consumableSelect.disabled = true;
+                consumableSelect.value = '';
+            } else if (itemType === 'consumable') {
+                consumableSelect.disabled = false;
+                assetSelect.disabled = true;
+                assetSelect.value = '';
+            }
+        } else if (fulfillmentType === 'procurement') {
+            assetSelect.disabled = true;
+            consumableSelect.disabled = true;
+            assetSelect.value = '';
+            consumableSelect.value = '';
+        }
+    }
+
+    function bindRowEvents(row) {
+        const itemTypeSelect = row.querySelector('.item-type-select');
+        const fulfillmentTypeSelect = row.querySelector('.fulfillment-type-select');
+
+        itemTypeSelect.addEventListener('change', function () {
+            toggleRowFields(row);
+        });
+
+        fulfillmentTypeSelect.addEventListener('change', function () {
+            toggleRowFields(row);
+        });
+
+        toggleRowFields(row);
+    }
+
+    document.querySelectorAll('#items-table tbody tr').forEach(function (row) {
+        bindRowEvents(row);
+    });
+
     document.getElementById('add-row').addEventListener('click', function () {
         const tableBody = document.querySelector('#items-table tbody');
         const row = document.createElement('tr');
@@ -165,15 +230,21 @@
             <td><input type="text" name="items[${rowIndex}][item_name]" class="form-control" required></td>
             <td><input type="text" name="items[${rowIndex}][spec]" class="form-control"></td>
             <td><input type="number" name="items[${rowIndex}][qty]" class="form-control" min="1" value="1" required></td>
-            <td><input type="number" step="0.01" name="items[${rowIndex}][estimated_price]" class="form-control"></td>
+            <td><input type="number" step="0.01" name="items[${rowIndex}][estimated_price]" class="form-control" placeholder="Harga per unit"></td>
             <td>
-                <select name="items[${rowIndex}][item_type]" class="form-control" required>
+                <select name="items[${rowIndex}][item_type]" class="form-control item-type-select" required>
                     <option value="asset">Asset</option>
                     <option value="consumable">Consumable</option>
                 </select>
             </td>
             <td>
-                <select name="items[${rowIndex}][asset_id]" class="form-control">
+                <select name="items[${rowIndex}][fulfillment_type]" class="form-control fulfillment-type-select" required>
+                    <option value="existing_stock">Ambil dari Stok Existing</option>
+                    <option value="procurement">Pengadaan Baru</option>
+                </select>
+            </td>
+            <td>
+                <select name="items[${rowIndex}][asset_id]" class="form-control asset-select">
                     <option value="">-- Pilih Asset --</option>
                     @foreach($assets as $asset)
                         <option value="{{ $asset->id }}">
@@ -183,7 +254,7 @@
                 </select>
             </td>
             <td>
-                <select name="items[${rowIndex}][consumable_id]" class="form-control">
+                <select name="items[${rowIndex}][consumable_id]" class="form-control consumable-select">
                     <option value="">-- Pilih Consumable --</option>
                     @foreach($consumables as $consumable)
                         <option value="{{ $consumable->id }}">
@@ -198,6 +269,7 @@
         `;
 
         tableBody.appendChild(row);
+        bindRowEvents(row);
         rowIndex++;
     });
 

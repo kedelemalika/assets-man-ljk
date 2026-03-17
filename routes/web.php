@@ -12,6 +12,7 @@ use App\Http\Controllers\BulkManufacturersController;
 use App\Http\Controllers\BulkSuppliersController;
 use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\CompaniesController;
+use App\Http\Controllers\ConsumableHandoverController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentsController;
 use App\Http\Controllers\DepreciationsController;
@@ -845,4 +846,22 @@ Route::group(['prefix' => 'item-requests', 'middleware' => ['auth']], function (
 
     Route::post('/{item_request}/ready-for-handover', [ItemRequestController::class, 'markReadyForHandover'])
         ->name('item-requests.ready-for-handover');
+    
+    Route::post('/{item_request}/mark-delivered', [ItemRequestController::class, 'markDelivered'])
+    ->name('item-requests.mark-delivered');
+    
+    Route::post('/{item_request}/close', [ItemRequestController::class, 'close'])
+    ->name('item-requests.close');
+
+    Route::post('/{item_request}/items/{item}/link-item', [ItemRequestController::class, 'linkRegisteredItem'])
+    ->name('item-requests.items.link');
+});
+
+Route::group(['prefix' => 'consumable-handovers', 'middleware' => ['auth']], function () {
+    Route::get('/', [ConsumableHandoverController::class, 'index'])->name('consumable-handovers.index');
+    Route::get('/create', [ConsumableHandoverController::class, 'create'])->name('consumable-handovers.create');
+    Route::get('/from-request/{item_request}', [ConsumableHandoverController::class, 'createFromRequest'])
+        ->name('consumable-handovers.create.from-request');
+    Route::post('/', [ConsumableHandoverController::class, 'store'])->name('consumable-handovers.store');
+    Route::get('/{consumable_handover}', [ConsumableHandoverController::class, 'show'])->name('consumable-handovers.show');
 });

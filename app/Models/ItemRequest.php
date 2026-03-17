@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ItemRequestApproval;
 
 class ItemRequest extends Model
 {
@@ -59,5 +60,9 @@ class ItemRequest extends Model
     public function rejector()
     {
         return $this->belongsTo(User::class, 'rejected_by');
+    }
+    public function approvals()
+    {
+        return $this->hasMany(ItemRequestApproval::class)->orderBy('approval_order');
     }
 }
