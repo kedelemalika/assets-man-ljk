@@ -2,11 +2,21 @@
 vendor/
 node_modules/
 public/uploads/
+
+# Laravel storage
 storage/*.key
-storage/logs/**
-storage/framework/cache/**
-storage/framework/sessions/**
-storage/framework/views/**
+storage/logs/
+storage/logs/*
+storage/framework/cache/
+storage/framework/cache/*
+storage/framework/sessions/
+storage/framework/sessions/*
+storage/framework/views/
+storage/framework/views/*
+
+# Cache
 bootstrap/cache/*.php
+
+# Supervisor
 supervisord.log
 supervisord.pid
