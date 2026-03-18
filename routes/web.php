@@ -12,11 +12,13 @@ use App\Http\Controllers\BulkManufacturersController;
 use App\Http\Controllers\BulkSuppliersController;
 use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\CompaniesController;
+use App\Http\Controllers\ConsumableHandoverController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentsController;
 use App\Http\Controllers\DepreciationsController;
 use App\Http\Controllers\GroupsController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ItemRequestController;
 use App\Http\Controllers\LabelsController;
 use App\Http\Controllers\UploadedFilesController;
 use App\Http\Controllers\ManufacturersController;
@@ -798,6 +800,12 @@ Route::group(['prefix' => 'basts', 'middleware' => ['auth']], function () {
             $trail->parent('basts.index')
                 ->push('Buat BAST', route('basts.create')));
 
+    Route::get('/from-request/{item_request}', [BastController::class, 'createFromRequest'])
+        ->name('basts.create.from-request')
+        ->breadcrumbs(fn (Trail $trail, $item_request) =>
+            $trail->parent('basts.index')
+                ->push('Buat BAST dari Pengajuan', route('basts.create.from-request', $item_request)));
+
     Route::post('/', [BastController::class, 'store'])
         ->name('basts.store');
 
@@ -821,4 +829,51 @@ Route::group(['prefix' => 'basts', 'middleware' => ['auth']], function () {
 
     Route::get('/{bast}/print', [BastController::class, 'print'])
         ->name('basts.print');
+});
+
+
+Route::group(['prefix' => 'item-requests', 'middleware' => ['auth']], function () {
+    Route::get('/', [ItemRequestController::class, 'index'])->name('item-requests.index');
+    Route::get('/create', [ItemRequestController::class, 'create'])->name('item-requests.create');
+    Route::post('/', [ItemRequestController::class, 'store'])->name('item-requests.store');
+    Route::get('/{item_request}', [ItemRequestController::class, 'show'])->name('item-requests.show');
+
+    Route::post('/{item_request}/approve', [ItemRequestController::class, 'approve'])
+        ->name('item-requests.approve');
+
+    Route::post('/{item_request}/reject', [ItemRequestController::class, 'reject'])
+        ->name('item-requests.reject');
+
+    Route::post('/{item_request}/ready-for-handover', [ItemRequestController::class, 'markReadyForHandover'])
+        ->name('item-requests.ready-for-handover');
+    
+    Route::post('/{item_request}/mark-delivered', [ItemRequestController::class, 'markDelivered'])
+    ->name('item-requests.mark-delivered');
+    
+    Route::post('/{item_request}/close', [ItemRequestController::class, 'close'])
+    ->name('item-requests.close');
+
+    Route::post('/{item_request}/items/{item}/link-item', [ItemRequestController::class, 'linkRegisteredItem'])
+    ->name('item-requests.items.link');
+
+    Route::post('/{item_request}/revision-needed', [ItemRequestController::class, 'markRevisionNeeded'])
+    ->name('item-requests.revision-needed');
+
+Route::post('/{item_request}/submit', [ItemRequestController::class, 'submit'])
+    ->name('item-requests.submit');
+
+Route::get('/{item_request}/edit', [ItemRequestController::class, 'edit'])
+    ->name('item-requests.edit');
+
+Route::put('/{item_request}', [ItemRequestController::class, 'update'])
+    ->name('item-requests.update');
+});
+
+Route::group(['prefix' => 'consumable-handovers', 'middleware' => ['auth']], function () {
+    Route::get('/', [ConsumableHandoverController::class, 'index'])->name('consumable-handovers.index');
+    Route::get('/create', [ConsumableHandoverController::class, 'create'])->name('consumable-handovers.create');
+    Route::get('/from-request/{item_request}', [ConsumableHandoverController::class, 'createFromRequest'])
+        ->name('consumable-handovers.create.from-request');
+    Route::post('/', [ConsumableHandoverController::class, 'store'])->name('consumable-handovers.store');
+    Route::get('/{consumable_handover}', [ConsumableHandoverController::class, 'show'])->name('consumable-handovers.show');
 });

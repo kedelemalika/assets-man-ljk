@@ -11,8 +11,12 @@
         <form id="create-form" method="POST" action="{{ route('basts.store') }}">
             @csrf
 
-            <input type="hidden" name="handover_by" id="handover_by" value="{{ old('handover_by') }}">
-            <input type="hidden" name="received_by" id="received_by" value="{{ old('received_by') }}">
+            @if(isset($item_request))
+                <input type="hidden" name="item_request_id" value="{{ $item_request->id }}">
+            @endif
+
+            <input type="hidden" name="handover_by" id="handover_by" value="{{ old('handover_by', isset($item_request) ? optional($item_request->requester)->display_name : '') }}">
+            <input type="hidden" name="received_by" id="received_by" value="{{ old('received_by', isset($item_request) ? optional($item_request->requester)->display_name : '') }}">
 
             @if ($errors->any())
                 <div class="alert alert-danger">
@@ -21,6 +25,12 @@
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
+                </div>
+            @endif
+
+            @if(isset($item_request))
+                <div class="alert alert-info">
+                    BAST ini dibuat dari pengajuan: <strong>{{ $item_request->request_number }}</strong>
                 </div>
             @endif
 
@@ -57,7 +67,8 @@
                                 <select name="department_id" class="form-control" required>
                                     <option value="">-- Pilih Department --</option>
                                     @foreach($departments as $dept)
-                                        <option value="{{ $dept->id }}" {{ old('department_id') == $dept->id ? 'selected' : '' }}>
+                                        <option value="{{ $dept->id }}"
+                                            {{ old('department_id', isset($item_request) ? $item_request->department_id : null) == $dept->id ? 'selected' : '' }}>
                                             {{ $dept->name }}
                                         </option>
                                     @endforeach
@@ -162,7 +173,7 @@
                                                 data-address="{{ $fullAddress }}"
                                                 data-city="{{ $cityOnly }}"
                                                 data-position="{{ $jobTitle }}"
-                                                {{ old('handover_by') == $user->display_name ? 'selected' : '' }}>
+                                                {{ old('received_by', isset($item_request) ? optional($item_request->requester)->display_name : '') == $user->display_name ? 'selected' : '' }}>
                                             {{ $user->display_name }}
                                         </option>
                                     @endforeach
@@ -174,7 +185,7 @@
                                 <input type="text"
                                        id="receiver_manual"
                                        class="form-control"
-                                       value="{{ old('received_by') }}">
+                                       value="{{ old('received_by', isset($item_request) ? optional($item_request->requester)->display_name : '') }}">
                             </div>
 
                             <div class="form-group">
@@ -182,7 +193,7 @@
                                 <input type="text"
                                        name="received_position"
                                        class="form-control"
-                                       value="{{ old('received_position') }}">
+                                       value="{{ old('received_position', isset($item_request) ? optional($item_request->department)->name : '') }}">
                             </div>
 
                             <div class="form-group">
@@ -205,7 +216,7 @@
 
                     <div class="form-group">
                         <label>Catatan</label>
-                        <textarea name="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
+                        <textarea name="notes" class="form-control" rows="3">{{ old('notes', isset($item_request) ? 'Generated from request: '.$item_request->request_number : '') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -215,6 +226,12 @@
                     <h3 class="box-title">Daftar Asset</h3>
                 </div>
                 <div class="box-body">
+                    @php
+                        $prefillAssets = isset($item_request)
+                            ? $item_request->items->pluck('asset_id')->filter()->values()
+                            : collect([null]);
+                    @endphp
+
                     <table class="table table-bordered" id="asset-table">
                         <thead>
                             <tr>
@@ -225,27 +242,29 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>
-                                    <select name="asset_id[]" class="form-control" required>
-                                        <option value="">-- Pilih Asset --</option>
-                                        @foreach($assets as $asset)
-                                            <option value="{{ $asset->id }}">
-                                                {{ $asset->asset_tag }} - {{ $asset->name ?? ($asset->model->name ?? 'Tanpa Nama') }}{{ $asset->serial ? ' / '.$asset->serial : '' }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="text" name="condition_notes[]" class="form-control">
-                                </td>
-                                <td>
-                                    <input type="text" name="remarks[]" class="form-control">
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-danger btn-sm remove-row">Hapus</button>
-                                </td>
-                            </tr>
+                            @foreach($prefillAssets as $prefillAssetId)
+                                <tr>
+                                    <td>
+                                        <select name="asset_id[]" class="form-control" required>
+                                            <option value="">-- Pilih Asset --</option>
+                                            @foreach($assets as $asset)
+                                                <option value="{{ $asset->id }}" {{ (string)$prefillAssetId === (string)$asset->id ? 'selected' : '' }}>
+                                                    {{ $asset->asset_tag }} - {{ $asset->name ?? ($asset->model->name ?? 'Tanpa Nama') }}{{ $asset->serial ? ' / '.$asset->serial : '' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="condition_notes[]" class="form-control">
+                                    </td>
+                                    <td>
+                                        <input type="text" name="remarks[]" class="form-control">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-sm remove-row">Hapus</button>
+                                    </td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
 
@@ -336,7 +355,8 @@ document.getElementById('receiver_manual').addEventListener('input', syncPersonF
 
 document.getElementById('add-row').addEventListener('click', function () {
     const tbody = document.querySelector('#asset-table tbody');
-    const firstRow = tbody.querySelector('tr');
+    const rows = tbody.querySelectorAll('tr');
+    const firstRow = rows[0];
     const newRow = firstRow.cloneNode(true);
 
     newRow.querySelectorAll('input').forEach(input => input.value = '');

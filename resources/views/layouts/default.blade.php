@@ -849,8 +849,8 @@
     {{-- Custom CSS --}}
     @if (($snipeSettings) && ($snipeSettings->custom_css))
         <style>
-            {!! $snipeSettings->show_custom_css() !!}
-        </style>
+        {!! $snipeSettings->show_custom_css() !!}
+    </style>
     @endif
 
 
@@ -1244,12 +1244,34 @@
                                 </a>
                             </li>
                         @endcan
-                        <li id="basts-sidenav-option"{!! (request()->is('basts*') ? ' class="active"' : '') !!}>
-    <a href="{{ route('basts.index') }}">
-        <i class="fa fa-file-signature fa-fw"></i>
-        <span>BAST</span>
-    </a>
-</li>
+                        {{-- Dokumen Treeview: BAST, Surat Terima, Request Barang --}}
+                        <li class="treeview{{ (request()->is('basts*') || request()->is('consumable-handovers*') || request()->is('item-requests*')) ? ' active' : '' }}" id="dokumen-sidenav-option">
+                            <a href="#">
+                                <i class="fa fa-folder-open fa-fw"></i>
+                                <span>Dokumen</span>
+                                <x-icon type="angle-left" class="pull-right fa-fw" />
+                            </a>
+                            <ul class="treeview-menu">
+                                <li id="basts-sidenav-option"{!! (request()->is('basts*') ? ' class="active"' : '') !!}>
+                                    <a href="{{ route('basts.index') }}">
+                                        <i class="fa fa-file-signature fa-fw"></i>
+                                        <span>BAST</span>
+                                    </a>
+                                </li>
+                                <li id="consumable-handovers-sidenav-option"{!! (request()->is('consumable-handovers*') ? ' class="active"' : '') !!}>
+                                    <a href="{{ route('consumable-handovers.index') }}">
+                                        <i class="fa-solid fa-box-open fa-fw"></i>
+                                        <span>Surat Terima</span>
+                                    </a>
+                                </li>
+                                <li id="item-requests-sidenav-option"{!! (request()->is('item-requests*') ? ' class="active"' : '') !!}>
+                                    <a href="{{ route('item-requests.index') }}">
+                                        <i class="fa-solid fa-file-lines fa-fw"></i>
+                                        <span>Request Barang</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                         @can('index', \App\Models\Asset::class)
                             <li class="treeview{{ ((request()->is('statuslabels/*') || request()->is('hardware*')) ? ' active' : '') }}">
                                 <a href="#">
@@ -1523,7 +1545,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\AssetModel::class)
-                                        <li {{!! (request()->is('models') ? ' class="active"' : '') !!}}>
+                                        <li {!! (request()->is('models') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('models.index') }}">
                                                 {{ trans('general.asset_models') }}
                                             </a>
@@ -1531,7 +1553,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\Category::class)
-                                        <li {{!! (request()->is('categories') ? ' class="active"' : '') !!}}>
+                                        <li {!! (request()->is('categories') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('categories.index') }}">
                                                 {{ trans('general.categories') }}
                                             </a>
@@ -1539,7 +1561,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\Manufacturer::class)
-                                        <li {{!! (request()->is('manufacturers') ? ' class="active"' : '') !!}}>
+                                        <li {!! (request()->is('manufacturers') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('manufacturers.index') }}">
                                                 {{ trans('general.manufacturers') }}
                                             </a>
@@ -1547,7 +1569,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\Supplier::class)
-                                        <li {{!! (request()->is('suppliers') ? ' class="active"' : '') !!}}>
+                                        <li {!! (request()->is('suppliers') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('suppliers.index') }}">
                                                 {{ trans('general.suppliers') }}
                                             </a>
@@ -1555,7 +1577,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\Department::class)
-                                        <li {{!! (request()->is('departments') ? ' class="active"' : '') !!}}>
+                                        <li {!! (request()->is('departments') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('departments.index') }}">
                                                 {{ trans('general.departments') }}
                                             </a>
@@ -1563,7 +1585,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\Location::class)
-                                        <li {{!! (request()->is('locations') ? ' class="active"' : '') !!}}>
+                                        <li {!! (request()->is('locations') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('locations.index') }}">
                                                 {{ trans('general.locations') }}
                                             </a>
@@ -1571,7 +1593,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\Company::class)
-                                        <li {{!! (request()->is('companies') ? ' class="active"' : '') !!}}>
+                                        <li {!! (request()->is('companies') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('companies.index') }}">
                                                 {{ trans('general.companies') }}
                                             </a>
@@ -1579,7 +1601,7 @@
                                     @endcan
 
                                     @can('view', \App\Models\Depreciation::class)
-                                        <li  {{!! (request()->is('depreciations') ? ' class="active"' : '') !!}}>
+                                        <li  {!! (request()->is('depreciations') ? ' class="active"' : '') !!}}>
                                             <a href="{{ route('depreciations.index') }}">
                                                 {{ trans('general.depreciation') }}
                                             </a>
@@ -1598,41 +1620,41 @@
                                 </a>
 
                                 <ul class="treeview-menu">
-                                    <li {{!! (request()->is('reports/activity') ? ' class="active"' : '') !!}}>
+                                    <li {!! (request()->is('reports/activity') ? ' class="active"' : '') !!}}>
                                         <a href="{{ route('reports.activity') }}">
                                             {{ trans('general.activity_report') }}
                                         </a>
                                     </li>
-                                    <li {{!! (request()->is('reports/custom') ? ' class="active"' : '') !!}}>
+                                    <li {!! (request()->is('reports/custom') ? ' class="active"' : '') !!}}>
                                         <a href="{{ url('reports/custom') }}">
                                             {{ trans('general.custom_report') }}
                                         </a>
                                     </li>
-                                    <li {{!! (request()->is('reports/audit') ? ' class="active"' : '') !!}}>
+                                    <li {!! (request()->is('reports/audit') ? ' class="active"' : '') !!}}>
                                         <a href="{{ route('reports.audit') }}">
                                             {{ trans('general.audit_report') }}</a>
                                     </li>
-                                    <li {{!! (request()->is('reports/depreciation') ? ' class="active"' : '') !!}}>
+                                    <li {!! (request()->is('reports/depreciation') ? ' class="active"' : '') !!}}>
                                         <a href="{{ url('reports/depreciation') }}">
                                             {{ trans('general.depreciation_report') }}
                                         </a>
                                     </li>
-                                    <li {{!! (request()->is('reports/licenses') ? ' class="active"' : '') !!}}>
+                                    <li {!! (request()->is('reports/licenses') ? ' class="active"' : '') !!}}>
                                         <a href="{{ url('reports/licenses') }}">
                                             {{ trans('general.license_report') }}
                                         </a>
                                     </li>
-                                    <li {{!! (request()->is('ui.reports.maintenances') ? ' class="active"' : '') !!}}>
+                                    <li {!! (request()->is('ui.reports.maintenances') ? ' class="active"' : '') !!}}>
                                         <a href="{{ route('ui.reports.maintenances') }}">
                                             {{ trans('general.asset_maintenance_report') }}
                                         </a>
                                     </li>
-                                    <li {{!! (request()->is('reports/unaccepted_assets') ? ' class="active"' : '') !!}}>
+                                    <li {!! (request()->is('reports/unaccepted_assets') ? ' class="active"' : '') !!}}>
                                         <a href="{{ url('reports/unaccepted_assets') }}">
                                             {{ trans('general.unaccepted_asset_report') }}
                                         </a>
                                     </li>
-                                    <li  {{!! (request()->is('reports/accessories') ? ' class="active"' : '') !!}}>
+                                    <li  {!! (request()->is('reports/accessories') ? ' class="active"' : '') !!}}>
                                         <a href="{{ url('reports/accessories') }}">
                                             {{ trans('general.accessory_report') }}
                                         </a>
@@ -1916,7 +1938,9 @@
              * Utility function to update the button text and aria-label.
              */
             function updateButton({ buttonEl, isDark }) {
-                const newCta = isDark ? '<i class="fa-regular fa-sun fa-fw"></i>  {{ trans('general.light_mode') }}' : '<i class="fa-solid fa-moon fa-fw"></i>   {{ trans('general.dark_mode') }}';
+                const newCta = isDark
+                ? '<i class="fa-regular fa-sun fa-fw"></i> {{ trans('general.light_mode') }}'
+                : '<i class="fa-solid fa-moon fa-fw"></i> {{ trans('general.dark_mode') }}';
                 // use an aria-label if omitting text on the button
                 // and using a sun/moon icon, for example
                 buttonEl.setAttribute("aria-label", newCta);
@@ -2099,7 +2123,7 @@
                 var audio = new Audio('{{ config('app.url') }}/sounds/lock.mp3');
                 if($(e).hasClass('fa-lock')) {
                     @if ((isset($user)) && ($user->enable_sounds))
-                        audio.play()
+                        audio.play();
                     @endif
                     $(e).removeClass('fa-lock').addClass('fa-unlock');
                     // Show the encrypted custom value and hide the element with asterisks
@@ -2108,7 +2132,7 @@
 
                 } else {
                     @if ((isset($user)) && ($user->enable_sounds))
-                        audio.play()
+                        audio.play();
                     @endif
                     $(e).removeClass('fa-unlock').addClass('fa-lock');
                     // ClipboardJS can't copy display:none elements so use a trick to hide the value
