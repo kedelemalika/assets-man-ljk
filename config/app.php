@@ -459,4 +459,12 @@ return [
 
     'max_unpaginated_records' => env('MAX_UNPAGINATED', '5000'),
 
+
+  /*
+  |--------------------------------------------------------------------------
+  | Procurement Approval
+  |--------------------------------------------------------------------------
+  */
+    'item_request_procurement_approver_id' => env('ITEM_REQUEST_PROCUREMENT_APPROVER_ID'),
+
 ];

@@ -855,6 +855,18 @@ Route::group(['prefix' => 'item-requests', 'middleware' => ['auth']], function (
 
     Route::post('/{item_request}/items/{item}/link-item', [ItemRequestController::class, 'linkRegisteredItem'])
     ->name('item-requests.items.link');
+
+    Route::post('/{item_request}/revision-needed', [ItemRequestController::class, 'markRevisionNeeded'])
+    ->name('item-requests.revision-needed');
+
+Route::post('/{item_request}/submit', [ItemRequestController::class, 'submit'])
+    ->name('item-requests.submit');
+
+Route::get('/{item_request}/edit', [ItemRequestController::class, 'edit'])
+    ->name('item-requests.edit');
+
+Route::put('/{item_request}', [ItemRequestController::class, 'update'])
+    ->name('item-requests.update');
 });
 
 Route::group(['prefix' => 'consumable-handovers', 'middleware' => ['auth']], function () {
